@@ -17,6 +17,7 @@ from phoenix.config import (
     get_env_auth_settings,
     get_env_database_schema,
     get_env_phoenix_admin_secret,
+    get_env_playground_streaming_timeout_seconds,
     get_env_postgres_azure_scope,
     get_env_postgres_connection_str,
     get_env_postgres_use_azure_managed_identity,
@@ -2533,6 +2534,32 @@ class TestGetEnvPostgresAzureScope:
         assert (
             get_env_postgres_azure_scope() == "https://ossrdbms-aad.database.windows.net/.default"
         )
+
+
+class TestGetEnvPlaygroundStreamingTimeoutSeconds:
+    """Tests for get_env_playground_streaming_timeout_seconds()."""
+
+    def test_unset_returns_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("PHOENIX_PLAYGROUND_STREAMING_TIMEOUT_SECONDS", raising=False)
+        assert get_env_playground_streaming_timeout_seconds() == 90
+
+    def test_custom_value_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("PHOENIX_PLAYGROUND_STREAMING_TIMEOUT_SECONDS", "600")
+        assert get_env_playground_streaming_timeout_seconds() == 600
+
+    @pytest.mark.parametrize(
+        "value",
+        [pytest.param("0", id="zero"), pytest.param("-1", id="negative")],
+    )
+    def test_non_positive_value_raises(self, monkeypatch: pytest.MonkeyPatch, value: str) -> None:
+        monkeypatch.setenv("PHOENIX_PLAYGROUND_STREAMING_TIMEOUT_SECONDS", value)
+        with pytest.raises(ValueError, match="must be a positive integer"):
+            get_env_playground_streaming_timeout_seconds()
+
+    def test_non_integer_value_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("PHOENIX_PLAYGROUND_STREAMING_TIMEOUT_SECONDS", "not-a-number")
+        with pytest.raises(ValueError, match="must be an integer"):
+            get_env_playground_streaming_timeout_seconds()
 
 
 class TestClientAssertionJWTFromEnv:

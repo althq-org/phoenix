@@ -342,6 +342,17 @@ throughput.
 
 Defaults to 20000.
 """
+ENV_PHOENIX_PLAYGROUND_STREAMING_TIMEOUT_SECONDS = "PHOENIX_PLAYGROUND_STREAMING_TIMEOUT_SECONDS"
+"""
+How long the playground waits for the next chunk of a streamed chat completion before giving
+up on that run.
+
+The timer is reset every time a chunk arrives, so this bounds the idle gap between chunks
+rather than the total duration of a run. Raise it for models that spend a long time reasoning
+before emitting their first token.
+
+Defaults to 90 seconds.
+"""
 ENV_LOGGING_MODE = "PHOENIX_LOGGING_MODE"
 """
 The logging mode (either 'default' or 'structured').
@@ -3462,6 +3473,34 @@ def get_env_max_spans_queue_size() -> int:
             f"{max_size}. Value must be a positive integer."
         )
     return max_size
+
+
+DEFAULT_PLAYGROUND_STREAMING_TIMEOUT_SECONDS = 90
+
+
+def get_env_playground_streaming_timeout_seconds() -> int:
+    """
+    Gets the playground streaming timeout from the
+    PHOENIX_PLAYGROUND_STREAMING_TIMEOUT_SECONDS environment variable.
+
+    Returns:
+        int: The number of seconds the playground waits for the next chunk of a streamed chat
+             completion before giving up on that run. Defaults to 90 if not set.
+
+    Raises:
+        ValueError: If the value is not a positive integer.
+    """
+    timeout = _int_val(
+        ENV_PHOENIX_PLAYGROUND_STREAMING_TIMEOUT_SECONDS,
+        DEFAULT_PLAYGROUND_STREAMING_TIMEOUT_SECONDS,
+    )
+    if timeout <= 0:
+        raise ValueError(
+            f"Invalid value for environment variable "
+            f"{ENV_PHOENIX_PLAYGROUND_STREAMING_TIMEOUT_SECONDS}: "
+            f"{timeout}. Value must be a positive integer."
+        )
+    return timeout
 
 
 def get_env_root_url() -> URL:
